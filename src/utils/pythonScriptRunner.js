@@ -11,7 +11,7 @@ const installPythonPackages = async () => {
 };
 const runPythonScript = async ({ url, source, databaseConnectionStr, institutionName }) => {
     return new Promise((resolve, reject) => {
-        const pythonProcess = spawn('python', ['script.py', url, source, databaseConnectionStr, "Demonstrations", "Data", institutionName]);
+        const pythonProcess = spawn('python3', ['script.py', url, source, databaseConnectionStr, "Demonstrations", "Data", institutionName]);
         let result = '';
         let error = '';
         pythonProcess.stdout.on('data', (data) => console.log(data.toString()));
