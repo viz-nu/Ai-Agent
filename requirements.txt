@@ -1,3 +1,4 @@
+Flask
 requests
 crawl4ai
 langchain

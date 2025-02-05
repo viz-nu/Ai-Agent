@@ -72,9 +72,9 @@ async def crawl_parallel(urls: List[str], source: str = "", max_concurrent: int 
                     splitter = MarkdownTextSplitter()
                     split_documents = splitter.create_documents([content])
                     # save the content in database
-                    documents_to_insert = [{"metadata": {"source": source, "chunk_size": len(doc.page_content), "crawled_at": datetime.utcnow(), "url_path": url, "institutionName": institutionName}, "content": doc.page_content, "chunk_number": idx + 1} for idx, doc in enumerate(split_documents)]
-                    if documents_to_insert:
-                        collection.insert_many(documents_to_insert)
+                    # documents_to_insert = [{"metadata": {"source": source, "chunk_size": len(doc.page_content), "crawled_at": datetime.utcnow(), "url_path": url, "institutionName": institutionName}, "content": doc.page_content, "chunk_number": idx + 1} for idx, doc in enumerate(split_documents)]
+                    # if documents_to_insert:
+                    #     collection.insert_many(documents_to_insert)
                     success_count += 1
                 else:
                     with open("errors.txt", "a") as f:
