@@ -4,24 +4,18 @@ import { EmbeddingFunct } from './openAi.js';
 const installPythonPackages = async () => {
     return new Promise((resolve, reject) => {
         const pipProcess = spawn('pip', ['install', '-r', 'requirements.txt']);
-
-        pipProcess.stdout.on('data', (data) => console.log(`pip: ${data.toString()}`));
-        pipProcess.stderr.on('data', (data) => console.error(`pip error: ${data.toString()}`));
-
-        pipProcess.on('close', (code) => {
-            code === 0 ? resolve() : reject(new Error('Failed to install Python dependencies.'));
-        });
+        // pipProcess.stdout.on('data', (data) => console.log(`pip: ${data.toString()}`));
+        // pipProcess.stderr.on('data', (data) => console.error(`pip error: ${data.toString()}`));
+        pipProcess.on('close', (code) => { code === 0 ? resolve("All Python dependencies installed") : reject(new Error('Failed to install Python dependencies.')); });
     });
 };
-const runPythonScript = async ({ url, source, databaseConnectionStr }) => {
+const runPythonScript = async ({ url, source, databaseConnectionStr, institutionName }) => {
     return new Promise((resolve, reject) => {
-        const pythonProcess = spawn('python', ['script.py', url, source, databaseConnectionStr, "Demonstrations", "Data"]);
-
+        const pythonProcess = spawn('python', ['script.py', url, source, databaseConnectionStr, "Demonstrations", "Data", institutionName]);
         let result = '';
         let error = '';
-
-        pythonProcess.stdout.on('data', (data) => result += data.toString());
-        pythonProcess.stderr.on('data', (data) => error += data.toString());
+        pythonProcess.stdout.on('data', (data) => console.log(data.toString()));
+        pythonProcess.stderr.on('data', (data) => console.log(data.toString()));
         pythonProcess.on('close', (code) => { (code === 0) ? resolve(result.trim()) : reject(new Error(`Python script error: ${error}`)) });
     });
 };
@@ -129,19 +123,13 @@ async function NewSearchIndex() {
         return { status: "success", message: "Vector index created" };
     }
 }
-export const Initiator = async (url, source) => {
+export const Initiator = async (url, source, institutionName) => {
     try {
         await installPythonPackages(); // Ensure dependencies are installed
         let databaseConnectionStr = process.env.MONGO_URL
-        let ScrapeResult = await runPythonScript({ url, source, databaseConnectionStr });
-        ScrapeResult = JSON.parse(ScrapeResult)
-        console.dir(ScrapeResult)
-        if (ScrapeResult.status != "success") return { success: false, message: "crawling failed" }
-        const EmbeddingsResult = await insertEmbeddings()
-        console.dir(EmbeddingsResult)
-        if (EmbeddingsResult.status != "success") return { success: false, message: "embeddings failed" }
+        await runPythonScript({ url, source, databaseConnectionStr, institutionName });
+        await insertEmbeddings()
         await NewSearchIndex()
-        console.dir({ success: true, message: "initiation successFull" });
         return { success: true, message: "initiation successFull" }
     } catch (error) {
         console.error(`Error: ${error.message}`);

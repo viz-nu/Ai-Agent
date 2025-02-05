@@ -8,21 +8,35 @@ app.use(express.json());
 
 app.post('/process-url', async (req, res) => {
     try {
-        const { url, source, institutionName, systemPrompt, UserPrompt, tools } = req.body;
+        const { url, source, institutionName, businessName, systemPrompt, tools } = req.body;
+        let UserPrompt = "For this query, the system has retrieved the following relevant information from ${businessName}’s database:  \n ${contexts}  \n Using this institutional data, generate a clear, precise, and tailored response to the following user inquiry: \n ${userMessage}  \n If the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible."
         if (!url || !source) return res.status(400).json({ error: 'Missing url or source' });
         const client = await MongoClient.connect(process.env.MONGO_URL);
-        const mainDoc = await client.db("Demonstrations").collection("Admin").insertOne({ sitemap: url, institutionName, systemPrompt, UserPrompt, tools });
         await Initiator(url, source, institutionName);
-        return res.json({ success: true, data: mainDoc });
+        const mainDoc = await client.db("Demonstrations").collection("Admin").insertOne({ sitemap: url, businessName, institutionName, systemPrompt, UserPrompt, tools });
+        return res.json({
+            success: true, 
+            data: mainDoc
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
+app.get("/client/:clientId", async () => {
+    try {
+        const client = await MongoClient.connect(process.env.MONGO_URL);
+        let clientDetails = await client.db("Demonstrations").collection("Admin").findOne({ _id: new ObjectId(req.params.clientId) }, { projection: { businessName: 1 } });
+        res.status(200).json({ success: true, message: "Client info", data: clientDetails })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ error: error.message });
+    }
+})
 app.post('/chat-bot', async (req, res) => {
     try {
-        const { userMessage, prevMessages = [], clientId, streamOption=false } = req.body;
+        const { userMessage, prevMessages = [], clientId, streamOption = false } = req.body;
         const client = await MongoClient.connect(process.env.MONGO_URL);
-        let { institutionName, systemPrompt, UserPrompt, tools } = await client.db("Demonstrations").collection("Admin").findOne({ _id: new ObjectId(clientId) });
+        let { institutionName, businessName, systemPrompt, UserPrompt, tools } = await client.db("Demonstrations").collection("Admin").findOne({ _id: new ObjectId(clientId) });
         const contexts = await getContext(institutionName, userMessage)
         if (contexts == "") console.log("Empty context received")
         if (!streamOption) {
@@ -33,7 +47,7 @@ app.post('/chat-bot', async (req, res) => {
                     ...prevMessages,
                     {
                         role: "user",
-                        content: UserPrompt.replace("${contexts}", contexts).replace("${userMessage}", userMessage)
+                        content: UserPrompt.replace("${contexts}", contexts).replace("${userMessage}", userMessage).replace("${businessName}", businessName)
                     }],
                 tools: tools.length > 1 ? tools : null,
                 store: tools.length > 1 ? true : null,
@@ -81,11 +95,9 @@ app.post('/chat-bot', async (req, res) => {
         }))
     } catch (error) {
         console.error(error);
-        
         res.status(500).json({ error: error.message });
     }
 });
-
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

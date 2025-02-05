@@ -18,7 +18,7 @@ import json
 from datetime import datetime
 
 
-async def crawl_parallel(urls: List[str], source: str = "", max_concurrent: int = 3, databaseConnectionStr: str = "", dbName: str = "", collectionName: str = ""):
+async def crawl_parallel(urls: List[str], source: str = "", max_concurrent: int = 3, databaseConnectionStr: str = "", dbName: str = "", collectionName: str = "", institutionName: str = ""):
     # We'll keep track of peak memory usage across all tasks
     peak_memory = 0
     process = psutil.Process(os.getpid())
@@ -26,9 +26,10 @@ async def crawl_parallel(urls: List[str], source: str = "", max_concurrent: int 
     def log_memory(prefix: str = ""):
         nonlocal peak_memory
         current_mem = process.memory_info().rss  # in bytes
-        if current_mem > peak_memory:peak_memory = current_mem
+        if current_mem > peak_memory:
+            peak_memory = current_mem
     # Minimal browser config
-    browser_config = BrowserConfig(headless=True,verbose=False, extra_args=["--disable-gpu","--disable-dev-shm-usage", "--no-sandbox"])
+    browser_config = BrowserConfig(headless=True, verbose=False, extra_args=["--disable-gpu", "--disable-dev-shm-usage", "--no-sandbox"])
     crawl_config = CrawlerRunConfig(cache_mode=CacheMode.BYPASS)
     client = MongoClient(databaseConnectionStr)
     db = client[dbName]
@@ -37,7 +38,6 @@ async def crawl_parallel(urls: List[str], source: str = "", max_concurrent: int 
     crawler = AsyncWebCrawler(config=browser_config)
     await crawler.start()
     try:
-        # We'll chunk the URLs in batches of 'max_concurrent'
         success_count = 0
         fail_count = 0
         for i in range(0, len(urls), max_concurrent):
@@ -59,7 +59,7 @@ async def crawl_parallel(urls: List[str], source: str = "", max_concurrent: int 
             for url, result in zip(batch, results):
                 if isinstance(result, Exception):
                     with open("errors.txt", "a") as f:
-                        f.write(f"Failed to crawl: { url}\nError: {result}\n\n\n")
+                        f.write(f"Failed to crawl: {url}\nError: {result}\n\n\n")
                     fail_count += 1
                 elif result.success:
                     # Remove media references and inline images
@@ -72,17 +72,17 @@ async def crawl_parallel(urls: List[str], source: str = "", max_concurrent: int 
                     splitter = MarkdownTextSplitter()
                     split_documents = splitter.create_documents([content])
                     # save the content in database
-                    documents_to_insert = [{"metadata": {"source": source, "chunk_size": len(doc.page_content), "crawled_at": datetime.utcnow(), "url_path": url}, "content": doc.page_content, "chunk_number": idx + 1} for idx, doc in enumerate(split_documents)]
+                    documents_to_insert = [{"metadata": {"source": source, "chunk_size": len(doc.page_content), "crawled_at": datetime.utcnow(), "url_path": url, "institutionName": institutionName}, "content": doc.page_content, "chunk_number": idx + 1} for idx, doc in enumerate(split_documents)]
                     if documents_to_insert:
                         collection.insert_many(documents_to_insert)
                     success_count += 1
                 else:
                     with open("errors.txt", "a") as f:
-                        f.write(f"Failed to crawl: { url}\nResult: {result}\n\n\n")
+                        f.write(f"Failed to crawl: {url}\nResult: {result}\n\n\n")
                     fail_count += 1
+                print(f"failed:{fail_count},success:{success_count},total:{len(urls)}")
     except Exception as e:
-        # Catch any other unexpected errors
-        print(f"An unexpected error occurred: {e}")
+        print({"error": "An unexpected error occurred: {e}"})
     finally:
         await crawler.close()
         client.close()
@@ -98,32 +98,30 @@ def get_all_urls_from_sitemap(sitemap_url, visited_sitemaps=None):
     if visited_sitemaps is None:
         visited_sitemaps = set()
     try:
-        # Check if we've already processed this sitemap
         if sitemap_url in visited_sitemaps:
             return []
-        # Fetch and parse the sitemap
-        response = requests.get(sitemap_url)
+        
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        response = requests.get(sitemap_url, headers=headers)
         response.raise_for_status()
+        
         root = ElementTree.fromstring(response.content)
-        # Register the namespace
         namespace = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
-        # Add this sitemap to the visited set
         visited_sitemaps.add(sitemap_url)
+        
         urls = []
         for loc in root.findall('.//ns:loc', namespace):
             url = loc.text.strip()
-            # Check if the URL points to another sitemap
             if url.endswith('.xml'):
-                # Recursively process nested sitemaps
                 urls.extend(get_all_urls_from_sitemap(url, visited_sitemaps))
             else:
-                # Add regular page URLs
                 urls.append(url)
         return urls
     except Exception as e:
-        print(f"Error processing sitemap {sitemap_url}: {e}")
+        print(f"Error: {e}")
         return []
-
 
 def get_pydantic_ai_docs_urls(mainURL):
     sitemap_url = mainURL
@@ -131,14 +129,14 @@ def get_pydantic_ai_docs_urls(mainURL):
     return all_urls
 
 
-async def process_url(url, source, databaseConnectionStr, dbName, collectionName):
+async def process_url(url, source, databaseConnectionStr, dbName, collectionName, institutionName):
     # step 1 fetch all links from sitemap
     urls = get_pydantic_ai_docs_urls(url)
+    print(f"total {len(urls)} are to be processed")
     if urls:
         max_concurrent = 10
-        result = await crawl_parallel(urls, source, max_concurrent, databaseConnectionStr, dbName, collectionName)
+        result = await crawl_parallel(urls, source, max_concurrent, databaseConnectionStr, dbName, collectionName, institutionName)
     else:
-        print("No URLs found to crawl")
         result = {"status": "failed"}
     return result
 if __name__ == "__main__":
@@ -147,5 +145,7 @@ if __name__ == "__main__":
     databaseConnectionStr = sys.argv[3]
     dbName = sys.argv[4]
     collectionName = sys.argv[5]
-    result = asyncio.run(process_url(url, source, databaseConnectionStr, dbName, collectionName))
-    print(json.dumps(result))
+    institutionName = sys.argv[6]
+    result = asyncio.run(process_url(
+        url, source, databaseConnectionStr, dbName, collectionName, institutionName))
+    print("done and dusted")
