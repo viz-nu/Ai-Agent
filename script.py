@@ -134,7 +134,7 @@ async def process_url(url, source, databaseConnectionStr, dbName, collectionName
     urls = get_pydantic_ai_docs_urls(url)
     print(f"total {len(urls)} are to be processed")
     if urls:
-        result = await crawl_parallel(urls, source, max_concurrent, databaseConnectionStr, dbName, collectionName, institutionName)
+        result = await crawl_parallel(urls, source, 10, databaseConnectionStr, dbName, collectionName, institutionName)
     else:
         result = {"status": "failed"}
     return result
