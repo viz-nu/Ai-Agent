@@ -21,8 +21,8 @@ def process():
         collectionName = "Data"
 
         # Running the async function in the background using create_task()
-        thread = threading.Thread(target=run_async_task, args=(url, source, databaseConnectionStr, dbName, collectionName, institutionName))
-        thread.start()
+        # thread = threading.Thread(target=run_async_task, args=(url, source, databaseConnectionStr, dbName, collectionName, institutionName))
+        # thread.start()
         # loop = asyncio.new_event_loop()
         # asyncio.set_event_loop(loop)
         # loop.run_until_complete(run_process(url, source, databaseConnectionStr, dbName, collectionName, institutionName))
