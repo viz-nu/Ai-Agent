@@ -139,13 +139,8 @@ async def process_url(url, source, databaseConnectionStr, dbName, collectionName
     else:
         result = {"status": "failed"}
     return result
-if __name__ == "__main__":
-    url = sys.argv[1]
-    source = sys.argv[2]
-    databaseConnectionStr = sys.argv[3]
-    dbName = sys.argv[4]
-    collectionName = sys.argv[5]
-    institutionName = sys.argv[6]
-    result = asyncio.run(process_url(
-        url, source, databaseConnectionStr, dbName, collectionName, institutionName))
-    print("done and dusted")
+async def run_process(url, source, databaseConnectionStr, dbName, collectionName, institutionName):
+    result = await process_url(url, source, databaseConnectionStr, dbName, collectionName, institutionName)
+    return result
+
+    
