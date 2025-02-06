@@ -1,3 +1,17 @@
-.env 
-node_modules
-venv
+# Byte-compiled / cached files
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+venv/
+.env/
+
+# Git internal files (not needed, but safe)
+.git/
+
+# Logs & temp files
+*.log
+
+# IDE/Editor files
+.vscode/
+.idea/
