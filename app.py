@@ -21,9 +21,9 @@ def process():
         collectionName = "Data"
 
         # Running the async function in the background using create_task()
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(run_process(url, source, databaseConnectionStr, dbName, collectionName, institutionName))
+        # loop = asyncio.new_event_loop()
+        # asyncio.set_event_loop(loop)
+        # loop.run_until_complete(run_process(url, source, databaseConnectionStr, dbName, collectionName, institutionName))
 
         return jsonify({"message": "Process completed!", "result": "done"})
     except Exception as e:
