@@ -30,12 +30,12 @@ def process():
         source = data.get('source')
         databaseConnectionStr = data.get('databaseConnectionStr')
         institutionName = data.get('institutionName')
-        max_concurrent = data.get('maxConcurrent')
-        dbName = "Demonstrations"
-        collectionName = "Data"
+        max_concurrent = data.get('maxConcurrent') 
+        dbName = data.get('dbName') or "Demonstrations"
+        collectionName = data.get('collectionName') or "Data"
         result = asyncio.run(crawl_parallel(urls, source, max_concurrent,
                              databaseConnectionStr, dbName, collectionName, institutionName))
-        return jsonify({"success": True, "message": "Process completed!", "result": "done"})
+        return jsonify({"success": True, "message": "Process completed!", "result": result})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 

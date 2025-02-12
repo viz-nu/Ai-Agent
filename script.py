@@ -35,6 +35,7 @@ async def crawl_parallel(urls: List[str], source: str = "", max_concurrent: int 
     collection = db[collectionName]
     crawler = AsyncWebCrawler(config=browser_config)
     await crawler.start()
+    final=[]
     try:
         success_count = 0
         fail_count = 0
@@ -51,6 +52,7 @@ async def crawl_parallel(urls: List[str], source: str = "", max_concurrent: int 
             for url, result in zip(batch, results):
                 if isinstance(result, Exception):
                     with open("errors.txt", "a") as f:
+                        final.append({"success":False,'url': url, 'Error': result})
                         f.write(f"Failed to crawl: {url}\nError: {result}\n\n\n")
                     fail_count += 1
                 elif result.success:
@@ -63,9 +65,11 @@ async def crawl_parallel(urls: List[str], source: str = "", max_concurrent: int 
                     documents_to_insert = [{"metadata": {"source": source, "chunk_size": len(doc.page_content), "crawled_at": datetime.utcnow(), "url_path": url, "institutionName": institutionName}, "content": doc.page_content, "chunk_number": idx + 1} for idx, doc in enumerate(split_documents)]
                     if documents_to_insert:
                         collection.insert_many(documents_to_insert)
+                    final.append({"success":True,'url': url, 'Error': None})
                     success_count += 1
                 else:
                     with open("errors.txt", "a") as f:
+                        final.append({"success":False,'url': url, 'Error': result})
                         f.write(f"Failed to crawl: {url}\nResult: {result}\n\n\n")
                     fail_count += 1
                 print(f"failed:{fail_count},success:{success_count},total:{len(urls)}")
@@ -77,8 +81,8 @@ async def crawl_parallel(urls: List[str], source: str = "", max_concurrent: int 
         return {
             "success": success_count,
             "failed": fail_count,
-            "status": "success",
-            "peakMemoryUsage(MB)": peak_memory // (1024 * 1024)
+            "peakMemoryUsage(MB)": peak_memory // (1024 * 1024),
+            "finalData":final
         }
 
 
