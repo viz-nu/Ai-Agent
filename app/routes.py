@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
-from app.services.crawler import fetch_urls_from_sitemap, crawl_and_process_urls
-
+from app.services.crawler import fetch_urls_from_sitemap
+from app.services.processing import crawl_and_store
+import asyncio
 main = Blueprint('main', __name__)
 
 @main.route("/fetch-urls", methods=["POST"])
@@ -17,8 +18,14 @@ def fetch_urls():
 def crawl_urls():
     data = request.json
     urls = data.get("urls")
+    dbName = data.get("dbName")
+    collectionName = data.get("collectionName")
+    source = data.get("source")
+    databaseConnectionStr = data.get("databaseConnectionStr")
+    institutionName = data.get("institutionName")
     if not urls or not isinstance(urls, list):
         return jsonify({"error": "Invalid URLs list"}), 400
     
-    results = crawl_and_process_urls(urls)
+    results = asyncio.run(crawl_and_store(urls, source, databaseConnectionStr, dbName, collectionName, institutionName))
+
     return jsonify({"results": results})
