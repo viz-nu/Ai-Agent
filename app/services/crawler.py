@@ -11,11 +11,12 @@ def fetch_urls_from_sitemap(sitemap_urls):
     ]
     def get_urls(url, retries=3):
         for attempt in range(retries):
+            headers = {"User-Agent": userAgents[attempt % len(userAgents)]}  
             try:
-                response = requests.get(url, headers=userAgents[attempt], timeout=10)
+                response = requests.get(url, headers=headers, timeout=10)
                 if response.status_code == 403:
                     print(f"Access forbidden (403) for {url}. Trying with different User-Agent.")
-                    response = requests.get(url, headers=userAgents[attempt], timeout=10)
+                    continue
                 
                 response.raise_for_status()
                 root = ElementTree.fromstring(response.content)
