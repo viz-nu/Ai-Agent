@@ -4,16 +4,18 @@ from xml.etree import ElementTree
 import time
 
 def fetch_urls_from_sitemap(sitemap_urls):
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
-    
+    userAgents = [
+        "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)"
+    ]
     def get_urls(url, retries=3):
         for attempt in range(retries):
             try:
-                response = requests.get(url, headers=headers, timeout=10)
+                response = requests.get(url, headers=userAgents[attempt], timeout=10)
                 if response.status_code == 403:
                     print(f"Access forbidden (403) for {url}. Trying with different User-Agent.")
-                    headers["User-Agent"] = "Googlebot/2.1 (+http://www.google.com/bot.html)"
-                    response = requests.get(url, headers=headers, timeout=10)
+                    response = requests.get(url, headers=userAgents[attempt], timeout=10)
                 
                 response.raise_for_status()
                 root = ElementTree.fromstring(response.content)
