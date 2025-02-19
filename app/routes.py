@@ -1,4 +1,4 @@
-from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, VideoUnavailable
+# from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, VideoUnavailable
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 import os
@@ -97,19 +97,19 @@ def get_semantic_chunks(transcript):
     return list(set(results))  # Remove duplicates
 
 
-@main.route('/yt-transcripts', methods=["GET"])
-def get_yt_transcripts():
-    video_id = request.args.get('video_id')
-    if not video_id:
-        return jsonify({"error": "Missing video_id parameter"}), 400
+# @main.route('/yt-transcripts', methods=["GET"])
+# def get_yt_transcripts():
+#     video_id = request.args.get('video_id')
+#     if not video_id:
+#         return jsonify({"error": "Missing video_id parameter"}), 400
 
-    try:
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
-        formatted_transcript = get_semantic_chunks(transcript)
-        return jsonify({"video_id": video_id, "transcript": formatted_transcript})
-    except TranscriptsDisabled:
-        return jsonify({"error": "Transcripts are disabled for this video"}), 403
-    except VideoUnavailable:
-        return jsonify({"error": "Video is unavailable"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+#     try:
+#         transcript = YouTubeTranscriptApi.get_transcript(video_id)
+#         formatted_transcript = get_semantic_chunks(transcript)
+#         return jsonify({"video_id": video_id, "transcript": formatted_transcript})
+#     except TranscriptsDisabled:
+#         return jsonify({"error": "Transcripts are disabled for this video"}), 403
+#     except VideoUnavailable:
+#         return jsonify({"error": "Video is unavailable"}), 404
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
