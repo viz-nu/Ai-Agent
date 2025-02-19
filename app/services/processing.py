@@ -21,7 +21,6 @@ async def crawl_and_store(urls: List[str], source: str, db_uri: str, db_name: st
     try:
         results = await crawler.arun_many(urls, config=crawl_config)
         final_data = []
-        
         for url, result in zip(urls, results):
             if result.success:
                 content = re.sub(r"!\[.*?\]\(.*?\)", "", result.markdown)  # Remove images
@@ -42,14 +41,12 @@ async def crawl_and_store(urls: List[str], source: str, db_uri: str, db_name: st
                     "content": doc.page_content,
                     "chunk_number": idx + 1
                 } for idx, doc in enumerate(split_docs)]
-                
                 if documents:
                     collection.insert_many(documents)
                 
                 final_data.append({"success": True, "url": url, "error": None})
             else:
-                final_data.append({"success": False, "url": url, "error": result.error_message})
-                
+                final_data.append({"success": False, "url": url, "error": result.error_message})  
         return final_data
     
     finally:
