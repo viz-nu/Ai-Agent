@@ -3,11 +3,11 @@ __pycache__/
 *.pyc
 
 # Virtual environment
-venv/
+virt/
 .env/
 # Git internal files (not needed, but safe)
 .git/
-
+Crawler.pem
 # Logs & temp files
 *.log
 
