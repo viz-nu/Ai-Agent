@@ -2,12 +2,18 @@ import asyncio
 import re
 import json
 from typing import List
+from crawl4ai.deep_crawling import BFSDeepCrawlStrategy
+
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, CacheMode
 
 
 async def crawl_and_store(urls: List[str]):
-    browser_config = BrowserConfig(headless=True, user_agent_mode="random", text_mode=True, light_mode=True)
-    crawl_config = CrawlerRunConfig(cache_mode=CacheMode.BYPASS, page_timeout=10000)
+    browser_config = BrowserConfig(
+        headless=True, user_agent_mode="random", text_mode=True, light_mode=True)
+    crawl_config = CrawlerRunConfig(cache_mode=CacheMode.BYPASS, page_timeout=10000,deep_crawl_strategy=BFSDeepCrawlStrategy(
+            max_depth=2, 
+            include_external=False
+        ))
     crawler = AsyncWebCrawler(config=browser_config)
     await crawler.start()
 
@@ -16,7 +22,8 @@ async def crawl_and_store(urls: List[str]):
         final_data = []
         for url, result in zip(urls, results):
             if result.success:
-                content = re.sub(r"!\[.*?\]\(.*?\)", "",result.markdown)  # Remove images
+                content = re.sub(r"!\[.*?\]\(.*?\)", "",
+                                 result.markdown)  # Remove images
                 # Remove markdown links
                 content = re.sub(r"(\* \[.*?\]\(.*?\)\n)+", "", content)
                 content = re.sub(r"\n{2,}", "\n", content).strip()
