@@ -20,6 +20,8 @@ def crawl_urls():
     if not urls or not isinstance(urls, list):
         return jsonify({"error": "Invalid URLs list"}), 400
 
-    results = asyncio.run(crawl_and_store(urls))
+    loop = asyncio.new_event_loop()  # Create a new event loop
+    asyncio.set_event_loop(loop)
+    results = loop.run_until_complete(crawl_and_store(urls))  # Use run_until_complete instead of run
 
     return jsonify({"results": results})
